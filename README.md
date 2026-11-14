@@ -23,13 +23,10 @@ Orbit Check lets an astronaut log daily health readings, tracks them over a miss
 - **Simulated Mission Data:** a 90-day generator with injected problems for demos
 
 ## How to Run
-
-```bash
-git clone [your repo link]
-cd [your repo name]
-[install command, e.g. pip install -r requirements.txt]
-[run command, e.g. python app.py]
-```
+git clone https://github.com/nayanikav-spec/Orbit_Check.git
+cd Orbit_Check
+pip install -r requirements.txt
+streamlit run app.py
 
 ## Tech Stack
 
