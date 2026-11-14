@@ -9,8 +9,8 @@ from simulate import generate_mission
  
 st.set_page_config(page_title="Orbit Check", page_icon="🪐", layout="wide")
  
-INK, PAPER, ORANGE = "#14110f", "#f1ece2", "#e8501a"
-COLORS = {"ok": "#1f6f3a", "warn": "#b7791f", "alert": "#c1272d"}
+INK, PAPER, ACCENT, LEMON = "#0b1f3a", "#e3f0f7", "#3f8fd2", "#f6e75a"
+COLORS = {"ok": "#1b7a4b", "warn": "#a96b00", "alert": "#c1272d"}
 WORDS = {"ok": "NORMAL", "warn": "CAUTION", "alert": "URGENT"}
 OVERALL = {"ok": "ALL CLEAR", "warn": "CAUTION", "alert": "URGENT"}
  
@@ -19,48 +19,55 @@ STYLE = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 #MainMenu, footer {visibility: hidden;}
-.stApp {background: #f1ece2;}
+.stApp {background: #e3f0f7;}
 .block-container {max-width: 1500px; padding-top: 1rem;}
 .stApp, .stApp p, .stApp label, .stApp input, .stApp button, .stApp li,
 div[data-testid="stMarkdownContainer"], .stTabs [data-baseweb="tab"] {
-  font-family: 'Bricolage Grotesque', sans-serif; color: #14110f;}
+  font-family: 'Bricolage Grotesque', sans-serif; color: #0b1f3a;}
 .mono {font-family: 'IBM Plex Mono', monospace;}
  
-* ---- banner ---- */
-.banner {background: #e8501a; color: #14110f; border-bottom: 5px solid #14110f;
+/* ---- banner ---- */
+.banner {background: #0b1f3a; border-bottom: 6px solid #f6e75a;
   padding: 10px 28px 16px; margin-bottom: 18px;}
 .banner-top {display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace;
-  font-size: .72rem; letter-spacing: .08em; border-bottom: 2px solid #14110f; padding-bottom: 8px;}
+  font-size: .72rem; letter-spacing: .08em; color: #bcd6e8; border-bottom: 1px solid rgba(188,214,232,.45); padding-bottom: 8px;}
+.banner-top span:first-child {color: #f6e75a; font-weight: 600;}
 .banner-title {font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800;
   font-size: clamp(2.4rem, 5vw, 4.2rem); line-height: 1; letter-spacing: -.03em;
-  margin: 12px 0 4px -.03em; color: #14110f;}
+  margin: 12px 0 4px -.03em; color: #f4fafd;}
 .banner-sub {font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.05rem; font-weight: 600;
-  line-height: 1.2; color: #14110f;}
+  line-height: 1.2; color: #bcd6e8;}
  
 /* ---- tabs ---- */
-.stTabs [data-baseweb="tab-list"] {gap: 28px; border-bottom: 2px solid #14110f;}
+.stTabs [data-baseweb="tab-list"] {gap: 28px; border-bottom: 2px solid #0b1f3a;}
 .stTabs [data-baseweb="tab"] {font-size: 1.15rem; font-weight: 600; padding: 8px 0;}
-.stTabs [data-baseweb="tab-highlight"] {background: #e8501a; height: 5px;}
+.stTabs [data-baseweb="tab-highlight"] {background: #0b1f3a; height: 5px;}
  
 /* ---- status strip ---- */
 .strip {display: flex; justify-content: space-between; align-items: baseline;
-  border-top: 6px solid #14110f; border-bottom: 2px solid #14110f; padding: 10px 2px; margin: 10px 0 6px;
+  border-top: 6px solid #0b1f3a; border-bottom: 2px solid #0b1f3a; padding: 10px 2px; margin: 10px 0 6px;
   font-family: 'IBM Plex Mono', monospace;}
-.strip .d {font-size: 1.3rem; font-weight: 600;}
+.strip .d {font-size: 1.3rem; font-weight: 600; background: #f6e75a; padding: 2px 12px;}
 .strip .s {font-size: 3rem; font-weight: 600; letter-spacing: -.02em; line-height: 1;}
 .strip .f {font-size: 1.3rem; font-weight: 600;}
  
 /* ---- ledger rows ---- */
-.row {display: grid; grid-template-columns: 1fr auto 120px; align-items: baseline; gap: 14px;
-  border-bottom: 1px solid rgba(20,17,15,.3); padding: 12px 2px;}
+.row {display: grid; grid-template-columns: 1fr auto 135px; align-items: baseline; gap: 14px;
+  border-bottom: 1px solid rgba(11,31,58,.3); padding: 12px 2px;}
 .row .rl {font-size: 1.1rem; font-weight: 600;}
 .row .rv {font-family: 'IBM Plex Mono', monospace; font-size: 2.1rem; font-weight: 600; text-align: right;}
 .row .rv small {font-size: .9rem; font-weight: 400; opacity: .65;}
-.row .rs {font-family: 'IBM Plex Mono', monospace; font-size: .8rem; font-weight: 600; letter-spacing: .06em;}
+.row .rs {font-family: 'IBM Plex Mono', monospace; font-size: .8rem; font-weight: 600; letter-spacing: .06em;
+  display: flex; align-items: center; gap: 9px;}
+.dot {width: 11px; height: 11px; border-radius: 50%; display: inline-block; animation: blink 1.4s ease-in-out infinite;}
+.dot.alert {animation-duration: .6s;}
+.dot.warn {animation-duration: 1s;}
+@keyframes blink {0%, 100% {opacity: 1; transform: scale(1);} 50% {opacity: .15; transform: scale(.7);}}
+@media (prefers-reduced-motion: reduce) {.dot {animation: none;}}
  
 .sec {font-family: 'IBM Plex Mono', monospace; font-size: .85rem; font-weight: 600;
-  letter-spacing: .12em; margin: 26px 0 6px; padding-bottom: 6px; border-bottom: 2px solid #14110f;}
-.alertbar {background: #c1272d; color: #f1ece2 !important; padding: 16px 20px; margin: 18px 0 4px;
+  letter-spacing: .12em; margin: 26px 0 6px; padding-bottom: 6px; border-bottom: 2px solid #0b1f3a;}
+.alertbar {background: #c1272d; color: #e3f0f7 !important; padding: 16px 20px; margin: 18px 0 4px;
   font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 1.05rem;}
 .flag {border-left: 6px solid #b7791f; padding: 6px 0 6px 16px; margin: 16px 0;}
 .flag .ft {font-size: 1.25rem; font-weight: 800;}
@@ -68,20 +75,20 @@ div[data-testid="stMarkdownContainer"], .stTabs [data-baseweb="tab"] {
 .flag .fa {font-weight: 600;}
 .logtitle {font-weight: 800; font-size: 2.4rem; letter-spacing: -.03em; line-height: 1;}
 .logsub {font-family: 'IBM Plex Mono', monospace; font-size: .8rem; margin: 6px 0 12px; opacity: .75;}
-.hz {border-top: 4px solid #14110f; padding-top: 8px; height: 100%;}
-.hz .n {font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 600; color: #e8501a;}
+.hz {border-top: 4px solid #0b1f3a; padding-top: 8px; height: 100%;}
+.hz .n {font-family: 'IBM Plex Mono', monospace; font-size: 1.4rem; font-weight: 600; background: #f6e75a; display: inline-block; padding: 0 10px; margin-bottom: 6px;}
 .hz b {font-size: 1.1rem;}
  
 /* ---- inputs + buttons: square, no rounded cards ---- */
-div[data-testid="stVerticalBlockBorderWrapper"] {border-radius: 0 !important; border: 2px solid #14110f !important;
-  background: #fffdf8;}
-.stNumberInput input {background: #f1ece2 !important; color: #14110f !important; border-radius: 0 !important;
+div[data-testid="stVerticalBlockBorderWrapper"] {border-radius: 0 !important; border: 2px solid #0b1f3a !important;
+  background: #f4fafd;}
+.stNumberInput input {background: #e3f0f7 !important; color: #0b1f3a !important; border-radius: 0 !important;
   font-family: 'IBM Plex Mono', monospace !important;}
-.stButton button {border-radius: 0 !important; border: 2px solid #14110f !important;
-  background: #f1ece2 !important; font-weight: 600;}
-.stButton button p {color: #14110f !important;}
-.stButton button[kind="primary"], .stButton button[data-testid="stBaseButton-primary"] {background: #14110f !important;}
-.stButton button[kind="primary"] p, .stButton button[data-testid="stBaseButton-primary"] p {color: #f1ece2 !important;}
+.stButton button {border-radius: 0 !important; border: 2px solid #0b1f3a !important;
+  background: #e3f0f7 !important; font-weight: 600;}
+.stButton button p {color: #0b1f3a !important;}
+.stButton button[kind="primary"], .stButton button[data-testid="stBaseButton-primary"] {background: #0b1f3a !important;}
+.stButton button[kind="primary"] p, .stButton button[data-testid="stBaseButton-primary"] p {color: #f6e75a !important;}
 </style>
 """
 st.markdown(STYLE, unsafe_allow_html=True)
@@ -171,7 +178,8 @@ with tab_dash:
                 s = status(ind, row[ind])
                 html += (f'<div class="row"><span class="rl">{LABELS[ind]}</span>'
                          f'<span class="rv">{row[ind]:.1f}<small> {UNITS[ind]}</small></span>'
-                         f'<span class="rs" style="color:{COLORS[s]}">■ {WORDS[s]}</span></div>')
+                         f'<span class="rs" style="color:{COLORS[s]}"><span class="dot {s}" '
+                         f'style="background:{COLORS[s]};box-shadow:0 0 8px {COLORS[s]}"></span>{WORDS[s]}</span></div>')
             col.markdown(html, unsafe_allow_html=True)
  
         if needs_flight_surgeon(flags):
@@ -192,15 +200,15 @@ with tab_dash:
 with tab_trends:
     l, r = st.columns([1, 3], gap="large")
     ind = l.selectbox("Indicator", list(RANGES), format_func=lambda k: LABELS[k])
-    l.caption("Black line: your readings. Dotted orange: your own 14-day baseline. "
+    l.caption("Black line: your readings. Dotted blue: your own 14-day baseline. "
               "Amber and red dashed lines: caution and urgent limits.")
     fig = go.Figure()
     fig.add_scatter(x=df["day"], y=df[ind], mode="lines+markers", name=LABELS[ind],
                     line=dict(color=INK, width=3))
     fig.add_scatter(x=df["day"], y=df[ind].rolling(14, min_periods=7).mean(),
-                    mode="lines", name="Your 14-day baseline", line=dict(dash="dot", color=ORANGE, width=3))
+                    mode="lines", name="Your 14-day baseline", line=dict(dash="dot", color=ACCENT, width=3))
     wl, wh, al, ah = RANGES[ind]
-    for v, color in [(wl, "#b7791f"), (wh, "#b7791f"), (al, "#c1272d"), (ah, "#c1272d")]:
+    for v, color in [(wl, "#a96b00"), (wh, "#a96b00"), (al, "#c1272d"), (ah, "#c1272d")]:
         if v is not None:
             fig.add_hline(y=v, line_dash="dash", line_color=color)
     fig.update_layout(template="simple_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
@@ -210,7 +218,7 @@ with tab_trends:
  
     st.markdown('<div class="sec">CUMULATIVE RADIATION DOSE (mSv)</div>', unsafe_allow_html=True)
     cum = go.Figure(go.Scatter(x=df["day"], y=df["radiation_msv"].cumsum(), fill="tozeroy",
-                               line=dict(color=INK, width=2), fillcolor="rgba(232,80,26,.45)"))
+                               line=dict(color=INK, width=2), fillcolor="rgba(246,231,90,.75)"))
     cum.update_layout(template="simple_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                       font=dict(color=INK), xaxis_title="Mission day", height=260,
                       margin=dict(l=10, r=10, t=10, b=10))
@@ -247,3 +255,5 @@ with tab_about:
     st.write("**Sources:** NASA Human Research Program (5 Hazards, Risks of Human Spaceflight); "
              "CSA article on monitoring radiation for astronaut health.")
     st.write("**Not medical advice.** This is a hackathon prototype.")
+ 
+Claude finished the response
