@@ -247,5 +247,3 @@ with tab_about:
     st.write("**Sources:** NASA Human Research Program (5 Hazards, Risks of Human Spaceflight); "
              "CSA article on monitoring radiation for astronaut health.")
     st.write("**Not medical advice.** This is a hackathon prototype.")
- 
-Claude finished the response
