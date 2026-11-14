@@ -1,6 +1,6 @@
-""SECTION 2: The rules. Compares readings to safe ranges AND the person's own baseline,
+"""SECTION 2: The rules. Compares readings to safe ranges AND the person's own baseline,
 then explains every flag in plain English and ties it to a NASA hazard/risk."""
- 
+
 # (warn_low, warn_high, alert_low, alert_high). None = no limit on that side.
 # PLACEHOLDER general ranges - replace/confirm with a cited medical source before submitting.
 RANGES = {
@@ -13,14 +13,14 @@ RANGES = {
     "mood":          (3, None, 2, None),
     "radiation_msv": (None, 1.2, None, 2.5),
 }
- 
+
 LABELS = {"heart_rate": "Heart rate", "systolic": "Systolic BP", "diastolic": "Diastolic BP",
           "glucose": "Blood sugar", "temp_c": "Body temp", "sleep_hrs": "Sleep",
           "mood": "Mood", "radiation_msv": "Radiation (daily)"}
- 
+
 UNITS = {"heart_rate": "bpm", "systolic": "mmHg", "diastolic": "mmHg", "glucose": "mg/dL",
          "temp_c": "C", "sleep_hrs": "hrs", "mood": "/5", "radiation_msv": "mSv"}
- 
+
 # indicator -> (NASA hazard, NASA risk). Risk names come from NASA's Risks page;
 # the hazard assignment is our own mapping.
 HAZARD = {
@@ -33,7 +33,7 @@ HAZARD = {
     "mood":          ("Isolation and confinement", "Risk of Behavioral Changes and Psychiatric Disorders"),
     "radiation_msv": ("Space radiation", "Risk of Radiation-Induced Cancers"),
 }
- 
+
 ACTIONS = {
     "heart_rate": "Rest, hydrate, and retake the reading in 30 minutes. Keep up your exercise routine.",
     "systolic": "Sit quietly for 5 minutes, then retake it. Log it again tomorrow.",
@@ -44,10 +44,10 @@ ACTIONS = {
     "mood": "Talk with a crewmate or schedule a private call with ground support.",
     "radiation_msv": "Follow your mission radiation protocol and check in with ground control.",
 }
- 
+
 Z_LIMIT = 3.0   # how many "standard deviations from your own normal" counts as a shift
- 
- 
+
+
 def status(ind, v):
     wl, wh, al, ah = RANGES[ind]
     if (al is not None and v < al) or (ah is not None and v > ah):
@@ -55,22 +55,22 @@ def status(ind, v):
     if (wl is not None and v < wl) or (wh is not None and v > wh):
         return "warn"
     return "ok"
- 
- 
+
+
 def baseline(df, ind, idx, window=14):
     """The person's own recent normal: mean and spread of the previous 14 days."""
     prev = df[ind].iloc[max(0, idx - window):idx]
     if len(prev) < 7:
         return None
     return prev.mean(), prev.std()
- 
- 
+
+
 def evaluate(df, idx=None):
     """Return a list of flags for one mission day."""
     idx = len(df) - 1 if idx is None else idx
     row = df.iloc[idx]
     flags = []
- 
+
     for ind in RANGES:
         v, s, b = row[ind], status(ind, row[ind]), baseline(df, ind, idx)
         hazard, risk = HAZARD[ind]
@@ -89,7 +89,7 @@ def evaluate(df, idx=None):
         action = ACTIONS[ind] if level == "warn" else "Contact your flight surgeon. " + ACTIONS[ind]
         flags.append(dict(indicator=ind, level=level, title=f"{LABELS[ind]}: {v:.1f} {UNITS[ind]}",
                           why=why, hazard=hazard, risk=risk, action=action))
- 
+
     # Multi-day pattern: 3 short nights in a row (worse if mood is also low)
     recent = df.iloc[max(0, idx - 2):idx + 1]
     if len(recent) == 3 and (recent["sleep_hrs"] < 6).all():
@@ -103,13 +103,13 @@ def evaluate(df, idx=None):
             hazard="Isolation and confinement", risk="Risk of Inadequate Sleep and Irregular Schedules",
             action=("Contact your flight surgeon. " if low_mood else "") + ACTIONS["sleep_hrs"]))
     return flags
- 
- 
+
+
 def overall(flags):
     levels = {f["level"] for f in flags}
     return "alert" if "alert" in levels else "warn" if "warn" in levels else "ok"
- 
- 
+
+
 def needs_flight_surgeon(flags):
     """Far from Earth, help is delayed: escalate on any urgent flag or 3+ cautions."""
     return any(f["level"] == "alert" for f in flags) or sum(f["level"] == "warn" for f in flags) >= 3
