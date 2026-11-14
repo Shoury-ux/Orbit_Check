@@ -113,5 +113,3 @@ def overall(flags):
 def needs_flight_surgeon(flags):
     """Far from Earth, help is delayed: escalate on any urgent flag or 3+ cautions."""
     return any(f["level"] == "alert" for f in flags) or sum(f["level"] == "warn" for f in flags) >= 3
- 
-Claude finished the response
