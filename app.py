@@ -26,16 +26,16 @@ div[data-testid="stMarkdownContainer"], .stTabs [data-baseweb="tab"] {
   font-family: 'Bricolage Grotesque', sans-serif; color: #14110f;}
 .mono {font-family: 'IBM Plex Mono', monospace;}
  
-/* ---- banner ---- */
-.banner {background: #e8501a; color: #14110f; border-bottom: 8px solid #14110f;
-  padding: 18px 34px 30px; margin-bottom: 28px;}
+* ---- banner ---- */
+.banner {background: #e8501a; color: #14110f; border-bottom: 5px solid #14110f;
+  padding: 10px 28px 16px; margin-bottom: 18px;}
 .banner-top {display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace;
-  font-size: .8rem; letter-spacing: .08em; border-bottom: 2px solid #14110f; padding-bottom: 10px;}
+  font-size: .72rem; letter-spacing: .08em; border-bottom: 2px solid #14110f; padding-bottom: 8px;}
 .banner-title {font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800;
-  font-size: clamp(4.5rem, 13.5vw, 12.5rem); line-height: .9; letter-spacing: -.045em;
-  margin: 26px 0 8px -.04em; color: #14110f;}
-.banner-sub {font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.6rem; font-weight: 600;
-  margin-left: 38%; max-width: 560px; line-height: 1.2; color: #14110f;}
+  font-size: clamp(2.4rem, 5vw, 4.2rem); line-height: 1; letter-spacing: -.03em;
+  margin: 12px 0 4px -.03em; color: #14110f;}
+.banner-sub {font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.05rem; font-weight: 600;
+  line-height: 1.2; color: #14110f;}
  
 /* ---- tabs ---- */
 .stTabs [data-baseweb="tab-list"] {gap: 28px; border-bottom: 2px solid #14110f;}
