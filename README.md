@@ -1,18 +1,17 @@
-# Orbit Check 🚀
-# 🪐 Orbit Check
+# Orbit Check
+# Orbit Check
 
 **Astronaut health monitoring software, built for the 2026 NASA Space Apps Challenge.**
-**A friendly daily health check-in for astronauts, built for the 2026 NASA Space Apps Challenge.**
 
 > ⚠️ Prototype using simulated data. Not medical advice.
-> ⚠️ This is a hackathon prototype. The demo astronaut's health readings are simulated, while the space weather, astronaut blood tests and radiation levels come from real NASA data and published studies. It isn't a medical device, and it doesn't give medical advice.
+> This is a hackathon prototype. The demo astronaut's health readings are simulated, while the space weather, astronaut blood tests and radiation levels come from real NASA data and published studies.
 
 ## Challenge
 ---
 
 Create Health Monitoring Software for Astronauts on Space Missions
 ## Why we built this
-We built this for the NASA Space Apps Challenge; our project turns open NASA data into something people can explore and act on.
+We built this for the NASA Space Apps Challenge. Astronauts carry much of the responsibility for noticing changes in their own health, and the hazards of spaceflight. We built Orbit Check so the person living the mission can understand what their body is telling them.
 ## What It Does
 Picture yourself on Mars. You've slept badly three nights running, your head hurts, and you can't tell if it's just a rough week or the start of something serious. The doctor is on Earth, and a message takes up to 24 minutes to get there and the same again to come back.
 
@@ -97,16 +96,6 @@ A few handy things:
 - **Start fresh:** delete `data/orbit_check.db`. It's recreated with the demo astronaut next time.
 - **Refresh the NASA data:** get a free key at [api.nasa.gov](https://api.nasa.gov), then run `NASA_API_KEY=your_key python nasa_data.py`. You don't need to; the data is already saved in `data/`.
 
-### Putting it online
-
-The easiest way is [Streamlit Community Cloud](https://share.streamlit.io), which is free:
-
-1. Sign in with GitHub and click **Create app**.
-2. Pick this repo, the `main` branch and `app.py`, and choose Python 3.11 or newer.
-3. Click **Deploy**. A few minutes later you'll have a link anyone can open.
-
-Good to know: on the free plan, saved check-ins and photos are cleared whenever the site restarts or updates. That's perfect for a demo; a real mission would need a permanent database.
-
 ## What's inside
 
 | File | What it does |
@@ -167,11 +156,8 @@ Good to know: on the free plan, saved check-ins and photos are cleared whenever 
 
 - **SaiNayanika Vakkalanka**: Coding and development (app, data generator, flag logic, AI model)
 - **Shoury Vasishta**: Research (health thresholds, NASA hazard links, data sources, documentation, pitch)
-- **SaiNayanika Vakkalanka:** coding and development (the app, the data generator, the flag logic and the AI model).
-- **Shoury Vasishta:** research (health thresholds, NASA hazard links, data sources, documentation and the pitch).
-
 ## Disclaimer
 ## One last thing
 
 This is a hackathon prototype using simulated data. It is not a medical device and does not provide medical advice.
-Orbit Check is a student prototype, not a medical device. Please don't use it to make real health decisions. If something feels wrong, talk to a real doctor. 💛
+Orbit Check is a student prototype, not a medical device. Please don't use it to make real health decisions. If something feels wrong, talk to a real doctor.
