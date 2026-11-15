@@ -9,26 +9,29 @@ def generate_mission(days=90, seed=42):
     df = pd.DataFrame({"day": d})
 
     # Normal "healthy astronaut" values with small daily noise
-    df["heart_rate"] = rng.normal(64, 3, days)
-    df["systolic"] = rng.normal(118, 4, days)
-    df["diastolic"] = rng.normal(76, 3, days)
-    df["glucose"] = rng.normal(92, 5, days)
-    df["temp_c"] = rng.normal(36.7, 0.15, days)
-    df["sleep_hrs"] = rng.normal(7.2, 0.5, days)
-    df["mood"] = rng.normal(4.0, 0.4, days)
-    df["radiation_msv"] = rng.normal(0.6, 0.05, days)
+    df["heart_rate"] = rng.normal(66, 3, days)
+    df["systolic"] = rng.normal(110, 3.5, days)
+    df["diastolic"] = rng.normal(70, 2.5, days)
+    df["glucose"] = rng.normal(87, 3.5, days)
+    df["temp_c"] = rng.normal(36.7, 0.12, days)
+    df["sleep_hrs"] = rng.normal(7.7, 0.3, days)
+    df["mood"] = rng.normal(4.2, 0.4, days)
+    df["radiation_msv"] = rng.normal(0.35, 0.03, days)   # typical ISS-like daily dose
 
     # Injected problems so the demo has something to catch
     dip = (d >= 40) & (d <= 55)                      # sleep loss + low mood + higher HR
-    df.loc[dip, "sleep_hrs"] -= 2.2
-    df.loc[dip, "mood"] -= 1.3
-    df.loc[dip, "heart_rate"] += 11
+    df.loc[dip, "sleep_hrs"] -= 2.3
+    df.loc[dip, "mood"] -= 1.6
+    df.loc[dip, "heart_rate"] += 14
 
     late = d >= 65                                   # blood pressure slowly climbs
-    df.loc[late, "systolic"] += np.linspace(0, 20, late.sum())
+    df.loc[late, "systolic"] += np.linspace(0, 34, late.sum())
+    df.loc[late, "diastolic"] += np.linspace(0, 16, late.sum())
 
-    df.loc[(d >= 75) & (d <= 80), "glucose"] += 50   # blood sugar bump
-    df.loc[d == 60, "radiation_msv"] += 1.5          # radiation spike (solar event)
+    df.loc[(d >= 75) & (d <= 80), "glucose"] += 45   # blood sugar bump
+    df.loc[d == 60, "radiation_msv"] += 1.4          # radiation spike (solar particle event)
 
-    df["mood"] = df["mood"].clip(1, 5)
-    return df.round(2)
+    df["mood"] = df["mood"].round().clip(1, 5).astype(int)
+    df["radiation_msv"] = df["radiation_msv"].clip(lower=0)
+    return df.round({"heart_rate": 0, "systolic": 0, "diastolic": 0, "glucose": 0,
+                     "temp_c": 1, "sleep_hrs": 1, "radiation_msv": 2})
