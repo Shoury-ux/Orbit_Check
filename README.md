@@ -15,18 +15,38 @@ Orbit Check lets an astronaut log daily health readings, tracks them over a miss
 ## Features
 
 - **Daily Check-In:** heart rate, blood pressure, blood sugar, temperature, sleep, mood, radiation dose
-- **Dashboard:** green/yellow/red status for each indicator and a mission day counter
-- **Trend Charts:** personal baseline, safe range, and flagged days
-- **Smart Flags:** fixed safety thresholds, personal baseline comparison, and multi-day patterns
+- **Dashboard:** green/yellow/red status for each indicator, your personal "normal" next to every reading, and a color-coded mission timeline
+- **Trend Charts:** safe/caution/urgent zones, your personal 14-day baseline, and flagged days marked on the line
+- **Smart Flags (three checks):**
+  1. Fixed safety thresholds from AHA, CDC and ADA (see [thresholds.md](thresholds.md))
+  2. Personal baseline: a reading 3+ standard deviations from your own last 14 days
+  3. Whole-picture anomaly detection: an Isolation Forest flags unusual *combinations* of readings
+- **Multi-day patterns:** 3 nights of short sleep, 3 days of low mood, and blood pressure crisis (180/120+)
 - **"Why Flagged" Panel:** explains each flag and links it to one of NASA's five hazards (isolation, gravity, radiation, closed environment, distance from Earth)
 - **Action Guidance:** next steps, with a "Contact flight surgeon" alert for serious issues
-- **Simulated Mission Data:** a 90-day generator with injected problems for demos
+- **Radiation tracking:** cumulative mission dose against the 600 mSv career limit
+- **Simulated Mission Data:** a 90-day generator with injected problems for demos; download the log as CSV
 
 ## How to Run
+
+```bash
 git clone https://github.com/nayanikav-spec/Orbit_Check.git
 cd Orbit_Check
 pip install -r requirements.txt
 streamlit run app.py
+```
+
+Run the rule tests with `pip install pytest && python -m pytest`.
+
+## Project Layout
+
+| File | What it does |
+|---|---|
+| `app.py` | Streamlit app: check-in form, dashboard, trends, guide |
+| `rules.py` | Safe ranges, personal baseline, patterns, anomaly model, plain-English explanations |
+| `simulate.py` | 90-day simulated mission with injected problems |
+| `thresholds.md` | Research notes behind every range (kept in sync with `rules.py`) |
+| `tests/test_rules.py` | Checks every threshold boundary and each type of flag |
 
 ## Tech Stack
 
