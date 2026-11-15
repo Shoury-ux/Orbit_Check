@@ -12,7 +12,7 @@
 
 Create Health Monitoring Software for Astronauts on Space Missions
 ## Why we built this
-
+We built this for the NASA Space Apps Challenge; our project turns open NASA data into something people can explore and act on.
 ## What It Does
 Picture yourself on Mars. You've slept badly three nights running, your head hurts, and you can't tell if it's just a rough week or the start of something serious. The doctor is on Earth, and a message takes up to 24 minutes to get there and the same again to come back.
 
