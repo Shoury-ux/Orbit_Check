@@ -1,12 +1,25 @@
-"""SECTION 1: Simulated mission data (all values are fake, for the prototype only)."""
+"""SECTION 1: Simulated mission data.
+
+The health readings are simulated (no real astronaut data), but the radiation days
+replay REAL solar particle events recorded by NASA DONKI on the mission's calendar dates.
+"""
+from datetime import date
+
 import numpy as np
 import pandas as pd
 
+from nasa import SEVERITY_WORDS, sep_events
 
-def generate_mission(days=90, seed=42):
+# Default replay window: covers the May 2024 solar storms.
+DEFAULT_START = date(2024, 4, 1)
+# Extra daily dose on a solar particle event day, by severity (illustrative values, mSv).
+SEP_DOSE = {2: 1.4, 1: 0.45}
+
+
+def generate_mission(days=90, seed=42, start=DEFAULT_START):
     rng = np.random.default_rng(seed)
     d = np.arange(1, days + 1)
-    df = pd.DataFrame({"day": d})
+    df = pd.DataFrame({"day": d, "date": pd.date_range(start, periods=days)})
 
     # Normal "healthy astronaut" values with small daily noise
     df["heart_rate"] = rng.normal(66, 3, days)
@@ -18,7 +31,7 @@ def generate_mission(days=90, seed=42):
     df["mood"] = rng.normal(4.2, 0.4, days)
     df["radiation_msv"] = rng.normal(0.35, 0.03, days)   # typical ISS-like daily dose
 
-    # Injected problems so the demo has something to catch
+    # Injected health problems so the demo has something to catch
     dip = (d >= 40) & (d <= 55)                      # sleep loss + low mood + higher HR
     df.loc[dip, "sleep_hrs"] -= 2.3
     df.loc[dip, "mood"] -= 1.6
@@ -29,7 +42,18 @@ def generate_mission(days=90, seed=42):
     df.loc[late, "diastolic"] += np.linspace(0, 16, late.sum())
 
     df.loc[(d >= 75) & (d <= 80), "glucose"] += 45   # blood sugar bump
-    df.loc[d == 60, "radiation_msv"] += 1.4          # radiation spike (solar particle event)
+
+    # Real space weather: NASA DONKI solar particle events on these calendar dates
+    df["sep_event"] = ""
+    ev = sep_events()
+    ev = ev[(ev["severity"] > 0) & ev["date"].between(df["date"].iloc[0], df["date"].iloc[-1])]
+    if len(ev):
+        for _, e in ev.iterrows():
+            i = df.index[df["date"] == e["date"]][0]
+            df.loc[i, "radiation_msv"] += SEP_DOSE[e["severity"]]
+            df.loc[i, "sep_event"] = SEVERITY_WORDS[e["severity"]]
+    elif sep_events().empty:                         # no NASA file: keep a demo spike
+        df.loc[d == 60, "radiation_msv"] += 1.4
 
     df["mood"] = df["mood"].round().clip(1, 5).astype(int)
     df["radiation_msv"] = df["radiation_msv"].clip(lower=0)
