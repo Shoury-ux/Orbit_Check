@@ -7,6 +7,7 @@ Keep the two in sync: the Guide tab renders its table straight from LIMITS.
 from dataclasses import dataclass
 
 import numpy as np
+import pandas as pd
 
 
 @dataclass(frozen=True)
@@ -168,6 +169,17 @@ def evaluate(df, idx=None):
         action = ACTIONS[ind] if level == "warn" else SURGEON + ACTIONS[ind]
         flags.append(_flag(ind, level, f"{LABELS[ind]}: {fmt(ind, v)} {UNITS[ind]}",
                            why, hazard, risk, action))
+
+    # Real solar particle event on this calendar day (NASA DONKI). thresholds.md: always urgent.
+    sep = row.get("sep_event", "")
+    if isinstance(sep, str) and sep:
+        when = f" on {row['date']:%d %b %Y}" if "date" in row and pd.notna(row["date"]) else ""
+        flags.append(_flag(
+            "sep_event", "alert", "Solar particle event alert",
+            f"NASA's DONKI space-weather database recorded a {sep} solar particle event{when}. "
+            "Bursts of fast protons from the Sun can raise your dose within hours.",
+            *HAZARD["radiation_msv"],
+            SURGEON + "Shelter in the most shielded part of the spacecraft until ground control gives the all-clear."))
 
     # Hypertensive crisis
     if row["systolic"] >= BP_CRISIS[0] or row["diastolic"] >= BP_CRISIS[1]:
