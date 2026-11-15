@@ -1,25 +1,72 @@
 """SECTION 2: The rules. Compares readings to safe ranges AND the person's own baseline,
-then explains every flag in plain English and ties it to a NASA hazard/risk."""
+then explains every flag in plain English and ties it to a NASA hazard/risk.
 
-# (warn_low, warn_high, alert_low, alert_high). None = no limit on that side.
-# PLACEHOLDER general ranges - replace/confirm with a cited medical source before submitting.
-RANGES = {
-    "heart_rate":    (50, 100, 40, 120),
-    "systolic":      (95, 130, 85, 140),
-    "diastolic":     (60, 85, 50, 90),
-    "glucose":       (70, 125, 54, 180),
-    "temp_c":        (36.0, 37.5, 35.0, 38.0),
-    "sleep_hrs":     (6, None, 4.5, None),
-    "mood":          (3, None, 2, None),
-    "radiation_msv": (None, 1.2, None, 2.5),
+The ranges below follow thresholds.md (AHA, CDC and ADA categories plus team-set bands).
+Keep the two in sync: the Guide tab renders its table straight from LIMITS.
+"""
+from dataclasses import dataclass
+
+import numpy as np
+
+
+@dataclass(frozen=True)
+class Limits:
+    """Caution/urgent cut-offs for one indicator. None = no limit on that side.
+
+    Low side: below warn_lo is caution, below alert_lo is urgent.
+    High side: above warn_hi is caution, above alert_hi is urgent
+    (or "at or above" when hi_inclusive=True, as in the AHA/ADA categories).
+    """
+    warn_lo: float | None = None
+    warn_hi: float | None = None
+    alert_lo: float | None = None
+    alert_hi: float | None = None
+    hi_inclusive: bool = False
+    source: str = ""
+
+    def _over(self, v, limit):
+        return limit is not None and (v >= limit if self.hi_inclusive else v > limit)
+
+    def status(self, v):
+        if (self.alert_lo is not None and v < self.alert_lo) or self._over(v, self.alert_hi):
+            return "alert"
+        if (self.warn_lo is not None and v < self.warn_lo) or self._over(v, self.warn_hi):
+            return "warn"
+        return "ok"
+
+
+LIMITS = {
+    "heart_rate":    Limits(warn_lo=60, warn_hi=100, alert_lo=50, alert_hi=120,
+                            source="Green: AHA. Caution/urgent: team-set"),
+    "systolic":      Limits(warn_lo=90, warn_hi=120, alert_hi=140, hi_inclusive=True,
+                            source="AHA categories. Low cut-off: team-set"),
+    "diastolic":     Limits(warn_lo=60, warn_hi=80, alert_hi=90, hi_inclusive=True,
+                            source="AHA categories. Low cut-off: team-set"),
+    "glucose":       Limits(warn_lo=70, warn_hi=100, alert_lo=54, alert_hi=126, hi_inclusive=True,
+                            source="American Diabetes Association (fasting)"),
+    "temp_c":        Limits(warn_lo=36.1, warn_hi=37.3, alert_lo=35.0, alert_hi=38.0, hi_inclusive=True,
+                            source="CDC (fever 38.0 C, hypothermia 35 C). Caution: team-set"),
+    "sleep_hrs":     Limits(warn_lo=7, alert_lo=6, source="Green: CDC. Caution/urgent: team-set"),
+    "mood":          Limits(warn_lo=3, alert_lo=2, source="Team-set (our own 1-5 scale)"),
+    "radiation_msv": Limits(warn_hi=0.5, alert_hi=1.0, source="Reference: NASA. Cut-offs: team-set"),
 }
+INDICATORS = list(LIMITS)
+
+# Hypertensive crisis (AHA): contact the flight surgeon immediately.
+BP_CRISIS = (180, 120)
+# NASA career effective-dose limit for astronauts.
+CAREER_LIMIT_MSV = 600
 
 LABELS = {"heart_rate": "Heart rate", "systolic": "Systolic BP", "diastolic": "Diastolic BP",
           "glucose": "Blood sugar", "temp_c": "Body temp", "sleep_hrs": "Sleep",
           "mood": "Mood", "radiation_msv": "Radiation (daily)"}
 
 UNITS = {"heart_rate": "bpm", "systolic": "mmHg", "diastolic": "mmHg", "glucose": "mg/dL",
-         "temp_c": "C", "sleep_hrs": "hrs", "mood": "/5", "radiation_msv": "mSv"}
+         "temp_c": "°C", "sleep_hrs": "hrs", "mood": "/5", "radiation_msv": "mSv"}
+
+# Decimal places used when showing each indicator.
+DECIMALS = {"heart_rate": 0, "systolic": 0, "diastolic": 0, "glucose": 0,
+            "temp_c": 1, "sleep_hrs": 1, "mood": 0, "radiation_msv": 2}
 
 # indicator -> (NASA hazard, NASA risk). Risk names come from NASA's Risks page;
 # the hazard assignment is our own mapping.
@@ -45,63 +92,113 @@ ACTIONS = {
     "radiation_msv": "Follow your mission radiation protocol and check in with ground control.",
 }
 
-Z_LIMIT = 3.0   # how many "standard deviations from your own normal" counts as a shift
+SURGEON = "Contact your flight surgeon. "
+Z_LIMIT = 3.0        # how many "standard deviations from your own normal" counts as a shift
+BASELINE_DAYS = 14   # length of the personal-baseline window
+MIN_BASELINE = 7     # need at least this many earlier days before comparing to baseline
+ANOMALY_MIN_DAYS = 21
+
+
+def fmt(ind, v):
+    return f"{v:.{DECIMALS[ind]}f}"
 
 
 def status(ind, v):
-    wl, wh, al, ah = RANGES[ind]
-    if (al is not None and v < al) or (ah is not None and v > ah):
-        return "alert"
-    if (wl is not None and v < wl) or (wh is not None and v > wh):
-        return "warn"
-    return "ok"
+    return LIMITS[ind].status(v)
 
 
-def baseline(df, ind, idx, window=14):
-    """The person's own recent normal: mean and spread of the previous 14 days."""
+def baseline(df, ind, idx, window=BASELINE_DAYS):
+    """The person's own recent normal: mean and spread of the previous `window` days."""
     prev = df[ind].iloc[max(0, idx - window):idx]
-    if len(prev) < 7:
+    if len(prev) < MIN_BASELINE:
         return None
     return prev.mean(), prev.std()
 
 
+def _flag(indicator, level, title, why, hazard, risk, action):
+    return dict(indicator=indicator, level=level, title=title, why=why,
+                hazard=hazard, risk=risk, action=action)
+
+
+def _anomaly_flag(df, idx):
+    """Isolation Forest over all indicators: is today an unusual *combination* of readings
+    compared with the earlier days of this mission? Catches drifts no single range would."""
+    if idx < ANOMALY_MIN_DAYS:
+        return None
+    from sklearn.ensemble import IsolationForest
+
+    hist = df[INDICATORS].iloc[:idx].to_numpy(dtype=float)
+    mu, sd = hist.mean(axis=0), hist.std(axis=0)
+    sd[sd == 0] = 1.0
+    model = IsolationForest(n_estimators=100, random_state=0).fit((hist - mu) / sd)
+    today = (df[INDICATORS].iloc[idx].to_numpy(dtype=float) - mu) / sd
+    if model.decision_function(today.reshape(1, -1))[0] >= -0.05:
+        return None
+    top = [INDICATORS[i] for i in np.argsort(-np.abs(today))[:2]]
+    names = " and ".join(LABELS[i].lower() for i in top)
+    return _flag("anomaly", "warn", "Unusual combination of readings",
+                 f"Each reading may look fine on its own, but together they are unlike any "
+                 f"earlier day of your mission. The biggest shifts are in {names}.",
+                 HAZARD[top[0]][0], HAZARD[top[0]][1],
+                 "Retake today's readings. If they hold, mention it at your next medical conference.")
+
+
 def evaluate(df, idx=None):
-    """Return a list of flags for one mission day."""
+    """Return a list of flags for one mission day (0-based row index)."""
     idx = len(df) - 1 if idx is None else idx
     row = df.iloc[idx]
     flags = []
 
-    for ind in RANGES:
-        v, s, b = row[ind], status(ind, row[ind]), baseline(df, ind, idx)
+    for ind in INDICATORS:
+        v = row[ind]
+        s, b = status(ind, v), baseline(df, ind, idx)
         hazard, risk = HAZARD[ind]
+        reading = f"{LABELS[ind]} is {fmt(ind, v)} {UNITS[ind]}"
         if s != "ok":
             level = s
-            why = (f"{LABELS[ind]} is {v:.1f} {UNITS[ind]}, outside the "
-                   f"{'urgent' if s == 'alert' else 'caution'} range.")
+            why = f"{reading}, outside the {'urgent' if s == 'alert' else 'caution'} limit."
             if b:
-                why += f" Your own 14-day average is {b[0]:.1f}."
+                why += f" Your own {BASELINE_DAYS}-day average is {fmt(ind, b[0])}."
         elif b and b[1] > 0 and abs(v - b[0]) / b[1] >= Z_LIMIT:
             level = "warn"
-            why = (f"{LABELS[ind]} is {v:.1f} {UNITS[ind]}. That's in the normal range, but far from "
-                   f"YOUR 14-day average of {b[0]:.1f}, so it's a real change for you.")
+            why = (f"{reading}. That's inside the safe range, but far from YOUR "
+                   f"{BASELINE_DAYS}-day average of {fmt(ind, b[0])}, so it's a real change for you.")
         else:
             continue
-        action = ACTIONS[ind] if level == "warn" else "Contact your flight surgeon. " + ACTIONS[ind]
-        flags.append(dict(indicator=ind, level=level, title=f"{LABELS[ind]}: {v:.1f} {UNITS[ind]}",
-                          why=why, hazard=hazard, risk=risk, action=action))
+        action = ACTIONS[ind] if level == "warn" else SURGEON + ACTIONS[ind]
+        flags.append(_flag(ind, level, f"{LABELS[ind]}: {fmt(ind, v)} {UNITS[ind]}",
+                           why, hazard, risk, action))
 
-    # Multi-day pattern: 3 short nights in a row (worse if mood is also low)
+    # Hypertensive crisis
+    if row["systolic"] >= BP_CRISIS[0] or row["diastolic"] >= BP_CRISIS[1]:
+        flags.insert(0, _flag(
+            "bp_crisis", "alert", f"Blood pressure crisis: {row['systolic']:.0f}/{row['diastolic']:.0f}",
+            f"Readings of {BP_CRISIS[0]}/{BP_CRISIS[1]} or higher are a hypertensive crisis.",
+            *HAZARD["systolic"], "Contact your flight surgeon NOW. Rest and retake in 5 minutes."))
+
+    # Multi-day patterns (thresholds.md: 3 in a row)
     recent = df.iloc[max(0, idx - 2):idx + 1]
     if len(recent) == 3 and (recent["sleep_hrs"] < 6).all():
         low_mood = row["mood"] < 3
-        flags.append(dict(
-            indicator="pattern", level="alert" if low_mood else "warn",
-            title="Sleep-loss pattern (3 nights in a row)",
-            why="You've slept under 6 hours three nights running"
-                + (" and your mood is low" if low_mood else "")
-                + ". Hazards can feed off each other: isolation and chronic sleep loss can make each other worse.",
-            hazard="Isolation and confinement", risk="Risk of Inadequate Sleep and Irregular Schedules",
-            action=("Contact your flight surgeon. " if low_mood else "") + ACTIONS["sleep_hrs"]))
+        flags.append(_flag(
+            "pattern_sleep", "alert", "Sleep-loss pattern (3 nights in a row)",
+            "You've slept under 6 hours three nights running"
+            + (" and your mood is low" if low_mood else "")
+            + ". Hazards feed off each other: isolation and chronic sleep loss make each other worse.",
+            "Isolation and confinement", "Risk of Inadequate Sleep and Irregular Schedules",
+            SURGEON + ACTIONS["sleep_hrs"]))
+    if len(recent) == 3 and (recent["mood"] <= 2).all():
+        flags.append(_flag(
+            "pattern_mood", "alert", "Low-mood pattern (3 days in a row)",
+            "Your mood has been 2 or lower for three days running. "
+            "A low mood is a signal, not a weakness.",
+            *HAZARD["mood"], SURGEON + ACTIONS["mood"]))
+
+    # Whole-picture check, only when nothing else already explains the day
+    if not flags:
+        a = _anomaly_flag(df, idx)
+        if a:
+            flags.append(a)
     return flags
 
 
